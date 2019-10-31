@@ -22,6 +22,10 @@ endfunction
 " deoplete_lamp#find_request
 "
 function! deoplete_lamp#find_request(...)
+  if mode()[0] !=# 'i'
+    return
+  endif
+
   if empty(s:request)
     return v:null
   endif
@@ -42,6 +46,10 @@ endfunction
 " request.
 "
 function! deoplete_lamp#request()
+  if mode()[0] !=# 'i'
+    return
+  endif
+
   let l:position = lamp#protocol#position#get()
 
   " skip request if match current context
@@ -78,7 +86,7 @@ function! s:on_response(position, responses)
   endif
 
   let l:request.responses = s:normalize(a:responses)
-  if index(['i', 'ic', 'ix'], mode()) >= 0
+  if mode()[0] ==# 'i'
     call deoplete#auto_complete()
   endif
 endfunction
