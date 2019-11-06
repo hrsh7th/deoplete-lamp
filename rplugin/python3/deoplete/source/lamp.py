@@ -36,8 +36,8 @@ class Source(Base):
 
         self.name = 'lamp'
         self.mark = '[LAMP]'
-        self.rank = 500
-        self.input_pattern = r'[^\w\s]$'
+        self.rank = 10000
+        self.input_pattern = r'.$'
         self.min_pattern_length = 0
         self.is_volatile = True
         self.sorters = []
@@ -45,6 +45,9 @@ class Source(Base):
         self.id = 0
 
     def gather_candidates(self, context):
+        if not self.vim.call('deoplete_lamp#is_completable'):
+            return []
+
         request = self.vim.call('deoplete_lamp#find_request')
         if request:
             if request['responses']:
@@ -57,21 +60,44 @@ class Source(Base):
     def to_candidates(self, request):
         candidates = []
 
-        for response in request['responses']:
+        for response in self.normalize_responses(request['responses']):
             items = sorted(response['items'], key=lambda x: x.get('sortText', x['label']))
             for item in items:
-                self.id += 1
                 candidates.append({
                     'word': item['insertText'] if item.get('insertText', None) else item['label'],
                     'abbr': item['label'],
-                    'kind': COMPLETION_ITEM_KIND[item['kind'] - 1 if 'kind' in item else 0],
-                    'user_data': json.dumps({
-                        'lamp': {
-                            'id': self.id,
-                            'server_name': response['server_name'],
-                            'completion_item': item
-                        }
-                    })
+                    'kind': COMPLETION_ITEM_KIND[item['kind'] - 1 if 'kind' in item else 0] + ' ' + item.get('detail', ''),
+                    'user_data': self.user_data(response['server_name'], item)
                 })
         return candidates
+
+    def normalize_responses(self, responses):
+        results = []
+        for response in responses:
+            if 'data' not in response:
+                continue
+
+            if isinstance(response['data'], list):
+                results.append({
+                    'server_name': response['server_name'],
+                    'isIncomplete': False,
+                    'items': response['data']
+                })
+            elif isinstance(response['data'], dict):
+                results.append({
+                    'server_name': response['server_name'],
+                    'isIncomplete': response['data']['isIncomplete'],
+                    'items': response['data']['items']
+                })
+        return results
+
+    def user_data(self, server_name, item):
+        self.id += 1
+        return json.dumps({
+            'lamp': {
+                'id': self.id,
+                'server_name': server_name,
+                'completion_item': item
+            }
+        })
 

@@ -19,6 +19,26 @@ function! deoplete_lamp#get_servers() abort
 endfunction
 
 "
+" deoplete_lamp#is_completable
+"
+function! deoplete_lamp#is_completable() abort
+  let l:servers = deoplete_lamp#get_servers()
+  let l:chars = []
+  for l:server in l:servers
+    let l:chars += l:server.capability.get_completion_trigger_characters()
+  endfor
+
+  " before char is trigger character.
+  if index(l:chars, lamp#view#cursor#get_before_char_skip_white()) >= 0
+    return v:true
+  endif
+
+  " input keyword.
+  let l:before_line  = lamp#view#cursor#get_before_line()
+  return strlen(matchstr(l:before_line, '\k*$')) >= 1
+endfunction
+
+"
 " deoplete_lamp#find_request
 "
 function! deoplete_lamp#find_request(...)
@@ -35,8 +55,8 @@ function! deoplete_lamp#find_request(...)
     return s:request
   endif
 
-  let l:text = getline(l:position.line + 1)[0 : l:position.character]
-  if matchstr(l:text, '\k*$') !=# ''
+  let l:before_line  = lamp#view#cursor#get_before_line()
+  if strlen(matchstr(l:before_line, '\k*$')) > 1
     return s:request
   endif
   return v:null
@@ -60,7 +80,7 @@ function! deoplete_lamp#request()
   " request completion
   let s:request = {
         \   'position': l:position,
-        \   'responses': v:null
+        \   'responses': []
         \ }
 
   let l:promises = map(deoplete_lamp#get_servers(), { k, v ->
@@ -68,41 +88,29 @@ function! deoplete_lamp#request()
         \     'textDocument': lamp#protocol#document#identifier(bufnr('%')),
         \     'position': l:position,
         \     'context': {
-        \       'triggerKind': 2
+        \       'triggerKind': 2,
+        \       'triggerCharacter': lamp#view#cursor#get_before_char_skip_white()
         \     }
-        \   }).then({ response -> { 'server': v, 'data': response } }).catch(lamp#rescue({ 'server': v, 'data': [] }))
+        \   }).then({ response -> { 'server_name': v.name, 'data': response } }).catch(lamp#rescue({ 'server_name': v.name, 'data': [] }))
         \ })
 
-  call s:Promise.all(l:promises).then(function('s:on_response', [l:position]))
+  let l:p = s:Promise.all(l:promises)
+  let l:p = l:p.then({ responses -> s:on_responses(l:position, responses) })
+  let l:p = l:p.catch(lamp#rescue())
 endfunction
 
 "
-" s:on_response
+" s:on_responses
 "
-function! s:on_response(position, responses)
+function! s:on_responses(position, responses)
   let l:request = deoplete_lamp#find_request(a:position)
   if empty(l:request)
     return
   endif
 
-  let l:request.responses = s:normalize(a:responses)
+  let l:request.responses = a:responses
   if mode()[0] ==# 'i'
     call deoplete#auto_complete()
   endif
-endfunction
-
-"
-" s:normalize
-"
-function! s:normalize(responses) abort
-  let l:results = []
-  for l:response in a:responses
-    call add(l:results, {
-          \   'server_name': l:response['server']['name'],
-          \   'isIncomplete': get(l:response['data'], 'isIncomplete', v:false),
-          \   'items': type(l:response['data']) == type([]) ? l:response['data'] : get(l:response['data'], 'items', [])
-          \ })
-  endfor
-  return l:results
 endfunction
 
