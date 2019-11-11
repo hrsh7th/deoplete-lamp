@@ -61,12 +61,13 @@ class Source(Base):
         candidates = []
 
         for response in self.normalize_responses(request['responses']):
-            items = sorted(response['items'], key=lambda x: x.get('sortText', x['label']))
+            items = sorted(response['items'], key=get_sort_key)
             for item in items:
-                if item.get('insertTextFormat') != 2:
-                    word = item.get('insertText', item['label'])
-                else:
+                if item.get('insertTextFormat') == 2:
                     word = item['label']
+                else:
+                    word = item.get('insertText', item['label'])
+
                 candidates.append({
                     'word': word,
                     'abbr': word,
@@ -104,4 +105,9 @@ class Source(Base):
                 'completion_item': item
             }
         })
+
+def get_sort_key(item):
+    if item.get('preselect', None) is not None:
+        return '0'
+    return item.get('sortText', item['label'])
 
