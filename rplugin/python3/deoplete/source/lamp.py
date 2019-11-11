@@ -63,9 +63,13 @@ class Source(Base):
         for response in self.normalize_responses(request['responses']):
             items = sorted(response['items'], key=lambda x: x.get('sortText', x['label']))
             for item in items:
+                if item.get('insertTextFormat') != 2:
+                    word = item.get('insertText', item['label'])
+                else:
+                    word = item['label']
                 candidates.append({
-                    'word': item['insertText'] if item.get('insertText', None) else item['label'],
-                    'abbr': item['label'],
+                    'word': word,
+                    'abbr': word,
                     'kind': COMPLETION_ITEM_KIND[item['kind'] - 1 if 'kind' in item else 0] + ' ' + item.get('detail', ''),
                     'user_data': self.user_data(response['server_name'], item)
                 })
