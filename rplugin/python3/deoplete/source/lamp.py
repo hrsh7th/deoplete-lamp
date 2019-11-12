@@ -63,14 +63,15 @@ class Source(Base):
         for response in self.normalize_responses(request['responses']):
             items = sorted(response['items'], key=get_sort_key)
             for item in items:
-                if item.get('insertTextFormat') == 2:
+                is_snippet = False
+                if item.get('insertTextFormat') == 2 and "insertText" in item:
                     word = item['label']
+                    is_snippet = True
                 else:
                     word = item.get('insertText', item['label'])
-
                 candidates.append({
                     'word': word,
-                    'abbr': word,
+                    'abbr': '{}~'.format(word) if is_snippet else word,
                     'kind': COMPLETION_ITEM_KIND[item['kind'] - 1 if 'kind' in item else 0] + ' ' + item.get('detail', ''),
                     'user_data': self.user_data(response['server_name'], item)
                 })
@@ -91,7 +92,7 @@ class Source(Base):
             elif isinstance(response['data'], dict):
                 results.append({
                     'server_name': response['server_name'],
-                    'isIncomplete': response['data']['isIncomplete'],
+                    'isIncomplete': response['data'].get('isIncomplete', True),
                     'items': response['data']['items']
                 })
         return results
