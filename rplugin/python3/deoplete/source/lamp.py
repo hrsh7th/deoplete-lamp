@@ -65,11 +65,12 @@ class Source(Base):
             for item in items:
                 word = item.get('insertText', item['label'])
                 is_expandable = False
-                if item.get('insertTextFormat') == 2:
+                if item.get('insertTextFormat') == 2 and 'insertText' in item:
                     word = item['label']
-                    is_expandable = True
+                    is_expandable = item['insertText'] != word
                 elif 'textEdit' in item:
                     word = item['label']
+                    is_expandable = item['textEdit']['newText'] != word
 
                 candidates.append({
                     'word': word,
