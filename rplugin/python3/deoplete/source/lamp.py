@@ -1,4 +1,5 @@
 import json
+import re
 from deoplete.source.base import Base
 
 # @see https://microsoft.github.io/language-server-protocol/specification#textDocument_completion
@@ -75,7 +76,7 @@ class Source(Base):
                 candidates.append({
                     'word': word,
                     'abbr': '{}~'.format(word) if is_expandable else word,
-                    'kind': COMPLETION_ITEM_KIND[item['kind'] - 1 if 'kind' in item else 0] + ' ' + item.get('detail', ''),
+                    'kind': COMPLETION_ITEM_KIND[item['kind'] - 1 if 'kind' in item else 0] + ' ' + re.sub('(\r\n|\r|\n)', '', item.get('detail', '')),
                     'user_data': self.user_data(response['server_name'], item)
                 })
         return candidates
