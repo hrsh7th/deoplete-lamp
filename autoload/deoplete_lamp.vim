@@ -35,7 +35,7 @@ function! deoplete_lamp#is_completable() abort
 
   " input keyword.
   let l:before_line  = lamp#view#cursor#get_before_line()
-  return strlen(matchstr(l:before_line, '\k*$')) >= 1
+  return strlen(matchstr(l:before_line, s:create_regex() . '$')) >= 1
 endfunction
 
 "
@@ -56,14 +56,14 @@ function! deoplete_lamp#find_request(...)
   endif
 
   let l:before_line  = lamp#view#cursor#get_before_line()
-  if strlen(matchstr(l:before_line, '\k*$')) > 1
+  if strlen(matchstr(l:before_line, s:create_regex() . '$')) > 1
     return s:request
   endif
   return v:null
 endfunction
 
 "
-" request.
+" deoplete_lamp#request
 "
 function! deoplete_lamp#request()
   if mode()[0] !=# 'i'
@@ -100,7 +100,7 @@ function! deoplete_lamp#request()
 endfunction
 
 "
-" s:on_responses
+" on_responses
 "
 function! s:on_responses(position, responses)
   let l:request = deoplete_lamp#find_request(a:position)
@@ -112,5 +112,15 @@ function! s:on_responses(position, responses)
   if mode()[0] ==# 'i'
     call deoplete#auto_complete()
   endif
+endfunction
+
+"
+" create_regex
+"
+function! s:create_regex() abort
+  let l:iskeyword = &iskeyword
+  let l:iskeyword = substitute(l:iskeyword, '@,', '', 'g')
+  let l:iskeyword = substitute(l:iskeyword, '\d\+-\d\+,', '', 'g')
+  return '\%(' . join(map(split(l:iskeyword, ','), { _, v -> '\V' . escape(v, '\') . '\m' }), '\|') . '\|\w\|\d\)'
 endfunction
 
