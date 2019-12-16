@@ -56,7 +56,7 @@ function! deoplete_lamp#find_request(...)
   endif
 
   let l:before_line  = lamp#view#cursor#get_before_line()
-  if strlen(matchstr(l:before_line, s:create_regex() . '$')) > 1
+  if strlen(matchstr(l:before_line, s:create_regex() . '$')) >= 1
     return s:request
   endif
   return v:null
@@ -118,9 +118,10 @@ endfunction
 " create_regex
 "
 function! s:create_regex() abort
-  let l:iskeyword = &iskeyword
-  let l:iskeyword = substitute(l:iskeyword, '@,', '', 'g')
-  let l:iskeyword = substitute(l:iskeyword, '\d\+-\d\+,', '', 'g')
-  return '\%(' . join(map(split(l:iskeyword, ','), { _, v -> '\V' . escape(v, '\') . '\m' }), '\|') . '\|\w\|\d\)'
+  let l:keywords = split(&iskeyword, ',')
+  let l:keywords = filter(l:keywords, { _, k -> match(k, '\d\+-\d\+') == -1 })
+  let l:keywords = filter(l:keywords, { _, k -> k !=# '@' })
+  let l:pattern = '\%(' . join(map(l:keywords, { _, v -> '\V' . escape(v, '\') . '\m' }), '\|') . '\|\w\|\d\)'
+  return l:pattern
 endfunction
 

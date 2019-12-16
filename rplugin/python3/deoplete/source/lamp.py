@@ -43,6 +43,7 @@ class Source(Base):
         self.is_volatile = True
         self.sorters = []
         self.vars = {}
+        self.dub = True
         self.id = 0
 
     def gather_candidates(self, context):
