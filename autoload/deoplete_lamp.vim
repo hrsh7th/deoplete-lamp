@@ -28,6 +28,7 @@ function! deoplete_lamp#is_completable() abort
     let l:chars += l:server.capability.get_completion_trigger_characters()
   endfor
 
+
   " before char is trigger character.
   if index(l:chars, lamp#view#cursor#get_before_char_skip_white()) >= 0
     return v:true
@@ -55,10 +56,11 @@ function! deoplete_lamp#find_request(...)
     return v:null
   endif
 
-  let l:position = get(a:000, 0, lamp#protocol#position#get())
+  let l:position = s:get_complete_position()
   if s:request.position.line == l:position.line && s:request.position.character == l:position.character
     return s:request
   endif
+
   return v:null
 endfunction
 
@@ -70,7 +72,7 @@ function! deoplete_lamp#request()
     return
   endif
 
-  let l:position = lamp#protocol#position#get()
+  let l:position = s:get_complete_position()
 
   " skip request if match current context
   if !empty(deoplete_lamp#find_request(l:position))
@@ -123,3 +125,21 @@ function! s:create_regex() abort
   return l:pattern
 endfunction
 
+"
+" get_complete_position
+"
+function! s:get_complete_position() abort
+  let l:servers = deoplete_lamp#get_servers()
+  let l:chars = []
+  for l:server in l:servers
+    let l:chars += l:server.capability.get_completion_trigger_characters()
+  endfor
+
+  let l:position = lamp#protocol#position#get()
+  let l:before_line = substitute(lamp#view#cursor#get_before_line(), '\w*$', '', 'g')
+  let l:position.character = strlen(l:before_line)
+  if index(l:chars, l:before_line[-1 : -1]) == -1
+    let l:position.character += 1
+  endif
+  return l:position
+endfunction
