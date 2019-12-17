@@ -35,7 +35,12 @@ function! deoplete_lamp#is_completable() abort
 
   " input keyword.
   let l:before_line  = lamp#view#cursor#get_before_line()
-  return strlen(matchstr(l:before_line, s:create_regex() . '$')) >= 1
+  let l:match = strlen(matchstr(l:before_line, s:create_regex() . '$')) >= 1
+  if l:match
+    return v:true
+  endif
+
+  return v:false
 endfunction
 
 "
@@ -52,11 +57,6 @@ function! deoplete_lamp#find_request(...)
 
   let l:position = get(a:000, 0, lamp#protocol#position#get())
   if s:request.position.line == l:position.line && s:request.position.character == l:position.character
-    return s:request
-  endif
-
-  let l:before_line  = lamp#view#cursor#get_before_line()
-  if strlen(matchstr(l:before_line, s:create_regex() . '$')) >= 1
     return s:request
   endif
   return v:null
@@ -109,9 +109,7 @@ function! s:on_responses(position, responses)
   endif
 
   let l:request.responses = a:responses
-  if mode()[0] ==# 'i'
-    call deoplete#auto_complete()
-  endif
+  call deoplete#auto_complete()
 endfunction
 
 "

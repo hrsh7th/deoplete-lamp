@@ -50,7 +50,11 @@ class Source(Base):
         if not self.vim.call('deoplete_lamp#is_completable'):
             return []
 
-        request = self.vim.call('deoplete_lamp#find_request')
+        request = self.vim.call('deoplete_lamp#find_request', {
+            'line': self.vim.call('line', '.') - 1,
+            'character': context['complete_position'] + 1
+        })
+
         if request:
             if request['responses']:
                 return self.to_candidates(request)
