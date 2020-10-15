@@ -1,4 +1,5 @@
 let s:Promise = vital#lamp#import('Async.Promise')
+let s:Position = vital#lamp#import('VS.LSP.Position')
 
 let s:request = {}
 
@@ -135,7 +136,7 @@ function! s:get_complete_position() abort
     let l:chars += l:server.capability.get_completion_trigger_characters()
   endfor
 
-  let l:position = lamp#protocol#position#get()
+  let l:position = s:Position.cursor()
   let l:before_line = substitute(lamp#view#cursor#get_before_line(), '\w*$', '', 'g')
   let l:position.character = strlen(l:before_line)
   if index(l:chars, l:before_line[-1 : -1]) == -1
